@@ -48,17 +48,21 @@ fn generate_summary(contents: &str) -> String {
     //     .collect();
 
     let n_matches = matches.len();
-    let mut system_ids: HashMap<String, usize> = HashMap::new();
+    let mut ddsi_topology = ddsi_topology::DdsiTopology::new();
 
     for line in matches {
-        let captured = ddsi_log_regex.parse(line).unwrap();
-        let system_id = captured.get_capture()["system_id"].to_string();
-        let count = system_ids.entry(system_id).or_insert(0);
-        *count += 1;
+        let dds_log_type = ddsi_log_regex.parse(line).unwrap();
+        ddsi_topology.update(dds_log_type);
     }
 
     format!(
-        "Summary:\n\t- Found {} lines matching ddsi logs.\n\n{:?}",
-        n_matches, system_ids,
+        "Summary:\n\
+        \t- Found {} lines matching ddsi logs.\n\
+        \t- Found {} participants: {:?}.\n\
+        \n{:?}",
+        n_matches,
+        ddsi_topology.len(),
+        ddsi_topology.get_participants_ids(),
+        ddsi_topology,
     )
 }

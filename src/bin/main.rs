@@ -1,4 +1,5 @@
 use clap::Parser;
+use log;
 use std::process;
 
 /// Process ddsi log file and generate summary.
@@ -7,6 +8,7 @@ struct Cli {
     /// ddsi log file to process.
     #[clap(short = 'f', long = "filename")]
     filename: String,
+
     /// Name of the output file.
     #[clap(short = 'o', long = "output")]
     output: String,
