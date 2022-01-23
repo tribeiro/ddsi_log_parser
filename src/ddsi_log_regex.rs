@@ -2,9 +2,25 @@ use regex::{Captures, Regex, RegexSet};
 
 /// Provide a set of regular expressions and methods for parsing ddsi log
 /// entries.
-struct DdsiLogRegex {
+pub struct DdsiLogRegex {
     regex_set: RegexSet,
     regex: Vec<Regex>,
+}
+
+pub enum DdsiLogType<'a> {
+    HandleParticipantsSelf(Captures<'a>),
+    RwQos(Captures<'a>),
+    SedpSt0(Captures<'a>),
+}
+
+impl<'a> DdsiLogType<'a> {
+    pub fn get_capture(&self) -> &Captures<'a> {
+        match self {
+            DdsiLogType::HandleParticipantsSelf(capture) => capture,
+            DdsiLogType::RwQos(capture) => capture,
+            DdsiLogType::SedpSt0(capture) => capture,
+        }
+    }
 }
 
 const HEADER_REGEX: &str = r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T(?P<hour>\d{2}):(?P<min>\d{2}):(?P<sec>\d{2})\+(?P<timezone>\d{4}) (?P<timestamp>[0-9]*\.[0-9]*)/";
@@ -22,7 +38,7 @@ const HOSTNAME_PORT_REGEX: &str = r"(?P<hostname_port>[0-9]*)";
 impl DdsiLogRegex {
     /// Create a new instance of DdsiLogRegex with the regular expressions
     /// needed to process ddsi log messages.
-    fn new() -> DdsiLogRegex {
+    pub fn new() -> DdsiLogRegex {
         let regex_set = RegexSet::new(&[
             [
                 HEADER_REGEX,
@@ -83,14 +99,28 @@ impl DdsiLogRegex {
     ///
     /// * `text` - A text to parse.
     ///
-    fn parse<'a>(&self, text: &'a str) -> Option<Captures<'a>> {
-        if self.regex_set.is_match(text) {
-            let matches: Vec<_> = self.regex_set.matches(text).into_iter().collect();
+    pub fn parse<'a>(&self, text: &'a str) -> Option<DdsiLogType<'a>> {
+        if let Some(match_index) = self.get_match_index(text) {
+            let capture = self.regex[match_index].captures(text).unwrap();
 
-            self.regex[matches[0]].captures(text)
+            match match_index {
+                0 => Some(DdsiLogType::HandleParticipantsSelf(capture)),
+                1 => Some(DdsiLogType::RwQos(capture)),
+                2 => Some(DdsiLogType::SedpSt0(capture)),
+                _ => None,
+            }
         } else {
             None
         }
+    }
+    /// Check if input text is a valid ddsi log entry.
+    pub fn is_match(&self, text: &str) -> bool {
+        self.regex_set.is_match(text)
+    }
+
+    /// Return the index of the regex expression that matches the input text.
+    fn get_match_index(&self, text: &str) -> Option<usize> {
+        self.regex_set.matches(text).into_iter().next()
     }
 }
 
@@ -247,7 +277,7 @@ mod tests {
 
         for (text, timestamp) in text_samples_match.iter().zip(timestamps.iter()) {
             let capture = dds_log_regex.parse(text).unwrap();
-            assert_eq!(&capture["timestamp"], *timestamp);
+            assert_eq!(&capture.get_capture()["timestamp"], *timestamp);
         }
     }
     #[test]
