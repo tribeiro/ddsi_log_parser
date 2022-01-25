@@ -1,7 +1,8 @@
+use indicatif::{ProgressBar, ProgressStyle};
 use regex::Captures;
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs::File;
+use std::fs::{metadata, File};
 use std::io::{self, prelude::*, BufReader};
 
 mod ddsi_log_regex;
@@ -25,7 +26,10 @@ where
 
     let summary = generate_summary(&config.get_filename());
 
-    println!("{}", summary);
+    println!("Writing summary to {}", &config.get_output());
+
+    let mut file = File::create(&config.get_output())?;
+    file.write_all(summary.as_bytes())?;
 
     Ok(())
 }
@@ -34,15 +38,35 @@ fn generate_summary(filename: &str) -> String {
     let ddsi_log_regex = ddsi_log_regex::DdsiLogRegex::new();
 
     let file = File::open(filename).unwrap();
+
+    let n_lines = metadata(filename).unwrap().len();
+
     let reader = BufReader::new(file);
 
     let mut ddsi_topology = ddsi_topology::DdsiTopology::new();
 
+    println!("Processing {} lines", n_lines);
+
+    let bar = ProgressBar::new(n_lines);
+
+    bar.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed}] {bar:40.cyan/blue} {eta} {msg}")
+            .progress_chars("##-"),
+    );
+
+    let mut n_matcher = 0;
+
     for line in reader.lines() {
-        if let Some(dds_log_type) = ddsi_log_regex.parse(&line.unwrap()) {
+        let line_data = &line.unwrap();
+
+        if let Some(dds_log_type) = ddsi_log_regex.parse(line_data) {
             ddsi_topology.update(dds_log_type);
+            n_matcher += 1;
         }
+        bar.inc(line_data.len() as u64);
     }
+    bar.finish();
 
     println!("Generating summary.");
     let summary = ddsi_topology.summarize();
@@ -51,7 +75,6 @@ fn generate_summary(filename: &str) -> String {
         "Summary:\n\
         \t- Found {} lines matching ddsi logs.\n\
         {}",
-        ddsi_topology.len(),
-        summary,
+        n_matcher, summary,
     )
 }
