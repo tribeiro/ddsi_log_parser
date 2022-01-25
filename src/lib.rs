@@ -34,35 +34,29 @@ where
 fn generate_summary(contents: &str) -> String {
     let ddsi_log_regex = ddsi_log_regex::DdsiLogRegex::new();
 
+    println!("Preprocessing {} lines.", contents.len());
     let matches: Vec<&str> = contents
         .lines()
         .filter(|line| ddsi_log_regex.is_match(&line))
         .collect();
 
-    // let system_ids: HashMap<String, &Captures> = matches
-    //     .iter()
-    //     .map(|line| {
-    //         let captured = ddsi_log_regex.parse(line).unwrap().get_capture();
-    //         (captured["system_id"].to_string(), captured)
-    //     })
-    //     .collect();
-
     let n_matches = matches.len();
     let mut ddsi_topology = ddsi_topology::DdsiTopology::new();
+
+    println!("Processing {} lines.", n_matches);
 
     for line in matches {
         let dds_log_type = ddsi_log_regex.parse(line).unwrap();
         ddsi_topology.update(dds_log_type);
     }
 
+    println!("Generating summary.");
+    let summary = ddsi_topology.summarize();
+
     format!(
         "Summary:\n\
         \t- Found {} lines matching ddsi logs.\n\
-        \t- Found {} participants: {:?}.\n\
-        \n{:?}",
-        n_matches,
-        ddsi_topology.len(),
-        ddsi_topology.get_participants_ids(),
-        ddsi_topology,
+        {}",
+        n_matches, summary,
     )
 }

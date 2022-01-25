@@ -11,7 +11,11 @@ pub enum DdsiLogType<'a> {
     HandleParticipantsSelf(Captures<'a>),
     WriterQos(Captures<'a>),
     ReaderQos(Captures<'a>),
-    SedpSt0(Captures<'a>),
+    WriterSedpSt0(Captures<'a>),
+    ReaderSedpSt0(Captures<'a>),
+    OwnIp(Captures<'a>),
+    WriterSedpSt3(Captures<'a>),
+    ReaderSedpSt3(Captures<'a>),
 }
 
 impl<'a> DdsiLogType<'a> {
@@ -20,7 +24,11 @@ impl<'a> DdsiLogType<'a> {
             DdsiLogType::HandleParticipantsSelf(capture) => capture,
             DdsiLogType::WriterQos(capture) => capture,
             DdsiLogType::ReaderQos(capture) => capture,
-            DdsiLogType::SedpSt0(capture) => capture,
+            DdsiLogType::WriterSedpSt0(capture) => capture,
+            DdsiLogType::ReaderSedpSt0(capture) => capture,
+            DdsiLogType::OwnIp(capture) => capture,
+            DdsiLogType::WriterSedpSt3(capture) => capture,
+            DdsiLogType::ReaderSedpSt3(capture) => capture,
         }
     }
     pub fn get_system_id(&self) -> String {
@@ -28,14 +36,19 @@ impl<'a> DdsiLogType<'a> {
             DdsiLogType::HandleParticipantsSelf(capture) => String::from(&capture["system_id"]),
             DdsiLogType::ReaderQos(capture) => String::from(&capture["system_id"]),
             DdsiLogType::WriterQos(capture) => String::from(&capture["system_id"]),
-            DdsiLogType::SedpSt0(capture) => String::from(&capture["system_id"]),
+            DdsiLogType::WriterSedpSt0(capture) => String::from(&capture["system_id"]),
+            DdsiLogType::ReaderSedpSt0(capture) => String::from(&capture["system_id"]),
+            DdsiLogType::OwnIp(_) => String::from("ownip"),
+            DdsiLogType::WriterSedpSt3(capture) => String::from(&capture["system_id"]),
+            DdsiLogType::ReaderSedpSt3(capture) => String::from(&capture["system_id"]),
         }
     }
 }
 
 const HEADER_REGEX: &str = r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T(?P<hour>\d{2}):(?P<min>\d{2}):(?P<sec>\d{2})\+(?P<timezone>\d{4}) (?P<timestamp>[0-9]*\.[0-9]*)/";
 const WRITER_QOS_REGEX: &str = r"QOS=\{topic=(?P<topic>[a-zA-Z0-9_]*),type=(?P<type>[a-zA-Z0-9_:]*),presentation=(?P<presentation>[a-zA-Z0-9_:]*),partition=\{(?P<partition>.*)\},durability=(?P<qos_durability>[a-zA-Z0-9_:]*),durability_service=(?P<durability_service>[a-zA-Z0-9_:\{\}\.\-]*),deadline=(?P<deadline>[a-zA-Z0-9\.]*),latency_budget=(?P<latency_budget>[a-zA-Z0-9\.]*),liveliness=(?P<liveliness>[a-zA-Z0-9_:\.]*),reliability=(?P<qos_reliability>[a-zA-Z0-9_:\.]*),destination_order=(?P<destination_order>[a-zA-Z0-9_:]*),history=(?P<history>[a-zA-Z0-9_:\-]*),resource_limits=(?P<resource_limits>[a-zA-Z0-9_:\-]*),transport_priority=(?P<transport_priority>[a-zA-Z0-9_:]*),lifespan=(?P<lifespan>[a-zA-Z0-9_:\.]*),ownership=(?P<ownership>[a-zA-Z0-9_:]*),ownership_strength=(?P<ownership_strength>[a-zA-Z0-9_:]*),writer_data_lifecycle=\{(?P<writer_data_lifecycle>[a-zA-Z0-9_:\.,]*)\},relaxed_qos_matching=(?P<relaxed_qos_matching>[a-zA-Z0-9_:]*),synchronous_endpoint=(?P<synchronous_endpoint>[a-zA-Z0-9_:]*)\}";
-const READER_QOS_REGEX: &str = r"QOS=\{topic=(?P<topic>[a-zA-Z0-9_]*),type=(?P<type>[a-zA-Z0-9_:]*),presentation=(?P<presentation>[a-zA-Z0-9_:]*),partition=\{(?P<partition>.*)\},durability=(?P<qos_durability>[a-zA-Z0-9_:]*),durability_service=(?P<durability_service>[a-zA-Z0-9_:\{\}\.\-]*),deadline=(?P<deadline>[a-zA-Z0-9\.]*),latency_budget=(?P<latency_budget>[a-zA-Z0-9\.]*),liveliness=(?P<liveliness>[a-zA-Z0-9_:\.]*),reliability=(?P<qos_reliability>[a-zA-Z0-9_:\.]*),destination_order=(?P<destination_order>[a-zA-Z0-9_:]*),history=(?P<history>[a-zA-Z0-9_:\-]*),resource_limits=(?P<resource_limits>[a-zA-Z0-9_:\-]*),transport_priority=(?P<transport_priority>[a-zA-Z0-9_:]*),lifespan=(?P<lifespan>[a-zA-Z0-9_:\.]*),ownership=(?P<ownership>[a-zA-Z0-9_:]*),time_based_filter=(?P<time_based_filter>[0-9\.]*),reader_data_lifecycle=(?P<reader_data_lifecycle>[0-9_:\.]*),relaxed_qos_matching=(?P<relaxed_qos_matching>[0-9]*),reader_lifespan=\{(?P<reader_lifespan>[0-9\.,])*\},subscription_keys=\{(?P<subscription_keys>[0-9\{\},]*)\},share=\{(?P<share>[0-9\{\},]*)\},synchronous_endpoint=(?P<synchronous_endpoint>[a-zA-Z0-9_:]*)\}";
+const READER_QOS_REGEX: &str = r"QOS=\{topic=(?P<topic>[a-zA-Z0-9_]*),type=(?P<type>[a-zA-Z0-9_:]*),presentation=(?P<presentation>[a-zA-Z0-9_:]*),partition=\{(?P<partition>.*)\},durability=(?P<qos_durability>[a-zA-Z0-9_:]*)(,durability_service=)?(?P<durability_service>[a-zA-Z0-9_:\{\}\.\-]*)?,deadline=(?P<deadline>[a-zA-Z0-9\.]*),latency_budget=(?P<latency_budget>[a-zA-Z0-9\.]*),liveliness=(?P<liveliness>[a-zA-Z0-9_:\.]*),reliability=(?P<qos_reliability>[a-zA-Z0-9_:\.]*),destination_order=(?P<destination_order>[a-zA-Z0-9_:]*),history=(?P<history>[a-zA-Z0-9_:\-]*),resource_limits=(?P<resource_limits>[a-zA-Z0-9_:\-]*),transport_priority=(?P<transport_priority>[a-zA-Z0-9_:]*)(,lifespan=)?(?P<lifespan>[a-zA-Z0-9_:\.]*)?,ownership=(?P<ownership>[a-zA-Z0-9_:]*),time_based_filter=(?P<time_based_filter>[0-9\.]*),reader_data_lifecycle=(?P<reader_data_lifecycle>[0-9_:\.]*),relaxed_qos_matching=(?P<relaxed_qos_matching>[0-9]*),reader_lifespan=\{(?P<reader_lifespan>[0-9\.,])*\},subscription_keys=\{(?P<subscription_keys>[0-9\{\},]*)\},share=\{(?P<share>[0-9\{\},]*)\},synchronous_endpoint=(?P<synchronous_endpoint>[a-zA-Z0-9_:]*)\}";
+// const READER_QOS_REGEX: &str = r"QOS=\{topic=(?P<topic>[a-zA-Z0-9_]*),type=(?P<type>[a-zA-Z0-9_:]*),presentation=(?P<presentation>[a-zA-Z0-9_:]*),partition=\{(?P<partition>.*)\},durability=(?P<qos_durability>[a-zA-Z0-9_:]*)(,durability_service=)?(?P<durability_service>[a-zA-Z0-9_:\{\}\.\-]*)?,deadline=";
 // relaxed_qos_matching=0,reader_lifespan={0,2147483647.999999999},subscription_keys={0,{}},share={0,},synchronous_endpoint=0}
 const SYSTEM_ID_REGEX: &str = r"(?P<system_id>[a-zA-Z0-9]*:[a-zA-Z0-9]*:[a-zA-Z0-9]*)";
 const RW_ID_REGEX: &str = r"(?P<rw_id>[a-zA-Z0-9]*)";
@@ -104,6 +117,50 @@ impl DdsiLogRegex {
                 WRITER_QOS_REGEX,
             ]
             .join(r""),
+            [
+                HEADER_REGEX,
+                r"dq.builtin: SEDP ST0 ",
+                SYSTEM_ID_REGEX,
+                r":",
+                RW_ID_REGEX,
+                r" ",
+                RELIABILITY_REGEX,
+                r" ",
+                DURABILITY_REGEX,
+                r" ",
+                RW_REGEX,
+                r": ",
+                r"(?P<discard>.*) p\(open\) NEW \(as ",
+                SUBNET_REGEX,
+                r":",
+                SUBNET_PORT_REGEX,
+                r" ",
+                HOSTNAME_REGEX,
+                r":",
+                HOSTNAME_PORT_REGEX,
+                r"\) ",
+                READER_QOS_REGEX,
+            ]
+            .join(r""),
+            [HEADER_REGEX, r"      main: ownip: ", HOSTNAME_REGEX].join(r""),
+            [
+                HEADER_REGEX,
+                r"dq.builtin: SEDP ST3 ",
+                SYSTEM_ID_REGEX,
+                r":",
+                RW_ID_REGEX,
+                "delete_proxy_writer",
+            ]
+            .join(r""),
+            [
+                HEADER_REGEX,
+                r"dq.builtin: SEDP ST3 ",
+                SYSTEM_ID_REGEX,
+                r":",
+                RW_ID_REGEX,
+                "delete_proxy_reader",
+            ]
+            .join(r""),
         ])
         .unwrap();
         let regex = regex_set
@@ -129,7 +186,11 @@ impl DdsiLogRegex {
                 0 => Some(DdsiLogType::HandleParticipantsSelf(capture)),
                 1 => Some(DdsiLogType::WriterQos(capture)),
                 2 => Some(DdsiLogType::ReaderQos(capture)),
-                3 => Some(DdsiLogType::SedpSt0(capture)),
+                3 => Some(DdsiLogType::WriterSedpSt0(capture)),
+                4 => Some(DdsiLogType::ReaderSedpSt0(capture)),
+                5 => Some(DdsiLogType::OwnIp(capture)),
+                6 => Some(DdsiLogType::WriterSedpSt3(capture)),
+                7 => Some(DdsiLogType::ReaderSedpSt3(capture)),
                 _ => None,
             }
         } else {
@@ -256,7 +317,7 @@ mod tests {
     }
 
     #[test]
-    fn dds_log_regex_sedp_st0() {
+    fn dds_log_regex_writer_sedp_st0() {
         let dds_log_regex = DdsiLogRegex::new();
         let sedp_st0_sample = "2021-12-07T22:22:48+0000 1638915768.903511/dq.builtin: SEDP ST0 7efc2093:7b:1:302 reliable transient writer: __BUILT-IN PARTITION__.DCPSParticipant/kernelModule::v_participantInfo p(open) NEW (as 239.255.0.1:7401 139.229.170.24:37673) QOS={topic=DCPSParticipant,type=kernelModule::v_participantInfo,presentation=1:0:0,partition={__BUILT-IN PARTITION__},durability=2,durability_service=0.000000000:{0:1}:{-1:-1:-1},deadline=2147483647.999999999,latency_budget=0.000000000,liveliness=0:0.000000000,reliability=1:0.000000000,destination_order=0,history=1:-1,resource_limits=-1:-1:-1,transport_priority=0,lifespan=2147483647.999999999,ownership=0,ownership_strength=0,writer_data_lifecycle={1,2147483647.999999999,2147483647.999999999},relaxed_qos_matching=0,synchronous_endpoint=0}";
 
@@ -314,18 +375,178 @@ mod tests {
         assert_eq!(&capture["relaxed_qos_matching"], "0");
         assert_eq!(&capture["synchronous_endpoint"], "0");
     }
+
+    #[test]
+    fn dds_log_regex_reader_sedp_st0() {
+        let dds_log_regex = DdsiLogRegex::new();
+        let sedp_st0_sample = "2022-01-23T14:11:29+0000 1642947089.904222/dq.builtin: SEDP ST0 745ad3d:7b:1:5507 reliable transient reader: nile.Test.data.Test_logevent_summaryState_782ec3fd/Test::logevent_summaryState_782ec3fd p(open) NEW (as 239.255.0.1:7401 172.17.0.4:39948) QOS={topic=Test_logevent_summaryState_782ec3fd,type=Test::logevent_summaryState_782ec3fd,presentation=0:0:0,partition={nile.Test.data},durability=2,durability_service=0.000000000:{0:100}:{-1:-1:-1},deadline=2147483647.999999999,latency_budget=0.000000000,liveliness=0:2147483647.999999999,reliability=1:0.100000000,destination_order=0,history=0:100,resource_limits=-1:-1:-1,transport_priority=0,lifespan=2147483647.999999999,ownership=0,time_based_filter=0.000000000,reader_data_lifecycle=2147483647.999999999:2147483647.999999999:0:1:1,relaxed_qos_matching=0,reader_lifespan={0,2147483647.999999999},subscription_keys={0,{}},share={0,},synchronous_endpoint=0}";
+
+        let matches = dds_log_regex.regex_set.matches(sedp_st0_sample);
+
+        assert!(matches.matched(4));
+
+        let capture = dds_log_regex.regex[4].captures(sedp_st0_sample).unwrap();
+
+        assert_eq!(&capture["year"], "2022");
+        assert_eq!(&capture["month"], "01");
+        assert_eq!(&capture["day"], "23");
+        assert_eq!(&capture["hour"], "14");
+        assert_eq!(&capture["min"], "11");
+        assert_eq!(&capture["sec"], "29");
+        assert_eq!(&capture["timezone"], "0000");
+        assert_eq!(&capture["timestamp"], "1642947089.904222");
+        assert_eq!(&capture["system_id"], "745ad3d:7b:1");
+        assert_eq!(&capture["rw_id"], "5507");
+        assert_eq!(&capture["reliability"], "reliable");
+        assert_eq!(&capture["durability"], "transient");
+        assert_eq!(&capture["rw"], "reader");
+        assert_eq!(
+            &capture["discard"],
+            "nile.Test.data.Test_logevent_summaryState_782ec3fd/Test::logevent_summaryState_782ec3fd"
+        );
+        assert_eq!(&capture["subnet"], "239.255.0.1");
+        assert_eq!(&capture["subnet_port"], "7401");
+        assert_eq!(&capture["hostname"], "172.17.0.4");
+        assert_eq!(&capture["hostname_port"], "39948");
+        assert_eq!(&capture["topic"], "Test_logevent_summaryState_782ec3fd");
+        assert_eq!(&capture["type"], "Test::logevent_summaryState_782ec3fd");
+        assert_eq!(&capture["presentation"], "0:0:0");
+        assert_eq!(&capture["partition"], "nile.Test.data");
+        assert_eq!(&capture["qos_durability"], "2");
+        assert_eq!(
+            &capture["durability_service"],
+            "0.000000000:{0:100}:{-1:-1:-1}"
+        );
+        assert_eq!(&capture["deadline"], "2147483647.999999999");
+        assert_eq!(&capture["latency_budget"], "0.000000000");
+        assert_eq!(&capture["liveliness"], "0:2147483647.999999999");
+        assert_eq!(&capture["qos_reliability"], "1:0.100000000");
+        assert_eq!(&capture["destination_order"], "0");
+        assert_eq!(&capture["history"], "0:100");
+        assert_eq!(&capture["resource_limits"], "-1:-1:-1");
+        assert_eq!(&capture["transport_priority"], "0");
+        assert_eq!(&capture["lifespan"], "2147483647.999999999");
+        assert_eq!(&capture["ownership"], "0");
+        assert_eq!(&capture["synchronous_endpoint"], "0");
+    }
+
+    #[test]
+    fn dds_log_regex_reliable_volatile_reader_sedp_st0() {
+        let dds_log_regex = DdsiLogRegex::new();
+        let sedp_st0_sample = "2022-01-23T14:11:29+0000 1642947089.895283/dq.builtin: SEDP ST0 745ad3d:7b:1:3b07 reliable volatile reader: nile.Test.cmd.Test_command_start_cc827fa3/Test::command_start_cc827fa3 p(open) NEW (as 239.255.0.1:7401 172.17.0.4:39948) QOS={topic=Test_command_start_cc827fa3,type=Test::command_start_cc827fa3,presentation=0:0:0,partition={nile.Test.cmd},durability=0,deadline=2147483647.999999999,latency_budget=0.000000000,liveliness=0:2147483647.999999999,reliability=1:0.100000000,destination_order=0,history=0:100,resource_limits=-1:-1:-1,transport_priority=0,ownership=0,time_based_filter=0.000000000,reader_data_lifecycle=2147483647.999999999:2147483647.999999999:0:1:1,relaxed_qos_matching=0,reader_lifespan={0,2147483647.999999999},subscription_keys={0,{}},share={0,},synchronous_endpoint=0}";
+
+        let matches = dds_log_regex.regex_set.matches(sedp_st0_sample);
+
+        assert!(matches.matched(4));
+
+        let capture = dds_log_regex.regex[4].captures(sedp_st0_sample).unwrap();
+
+        assert_eq!(&capture["year"], "2022");
+        assert_eq!(&capture["month"], "01");
+        assert_eq!(&capture["day"], "23");
+        assert_eq!(&capture["hour"], "14");
+        assert_eq!(&capture["min"], "11");
+        assert_eq!(&capture["sec"], "29");
+        assert_eq!(&capture["timezone"], "0000");
+        assert_eq!(&capture["timestamp"], "1642947089.895283");
+        assert_eq!(&capture["system_id"], "745ad3d:7b:1");
+        assert_eq!(&capture["rw_id"], "3b07");
+        assert_eq!(&capture["reliability"], "reliable");
+        assert_eq!(&capture["durability"], "volatile");
+        assert_eq!(&capture["rw"], "reader");
+        assert_eq!(
+            &capture["discard"],
+            "nile.Test.cmd.Test_command_start_cc827fa3/Test::command_start_cc827fa3"
+        );
+        assert_eq!(&capture["subnet"], "239.255.0.1");
+        assert_eq!(&capture["subnet_port"], "7401");
+        assert_eq!(&capture["hostname"], "172.17.0.4");
+        assert_eq!(&capture["hostname_port"], "39948");
+        assert_eq!(&capture["topic"], "Test_command_start_cc827fa3");
+        assert_eq!(&capture["type"], "Test::command_start_cc827fa3");
+        assert_eq!(&capture["presentation"], "0:0:0");
+        assert_eq!(&capture["partition"], "nile.Test.cmd");
+        assert_eq!(&capture["qos_durability"], "0");
+        assert_eq!(&capture["deadline"], "2147483647.999999999");
+        assert_eq!(&capture["latency_budget"], "0.000000000");
+        assert_eq!(&capture["liveliness"], "0:2147483647.999999999");
+        assert_eq!(&capture["qos_reliability"], "1:0.100000000");
+        assert_eq!(&capture["destination_order"], "0");
+        assert_eq!(&capture["history"], "0:100");
+        assert_eq!(&capture["resource_limits"], "-1:-1:-1");
+        assert_eq!(&capture["transport_priority"], "0");
+        assert_eq!(&capture["ownership"], "0");
+        assert_eq!(&capture["synchronous_endpoint"], "0");
+    }
+
+    #[test]
+    fn own_ip() {
+        let dds_log_regex = DdsiLogRegex::new();
+        let own_ip_sample =
+            "2022-01-23T14:08:13+0000 1642946893.209853/      main: ownip: 172.17.0.3";
+        let matches = dds_log_regex.regex_set.matches(own_ip_sample);
+
+        assert!(matches.matched(5));
+
+        let capture = dds_log_regex.regex[5].captures(own_ip_sample).unwrap();
+
+        assert_eq!(&capture["hostname"], "172.17.0.3");
+    }
+
+    #[test]
+    fn writer_sedp_st3() {
+        let dds_log_regex = DdsiLogRegex::new();
+        let writer_sedp_st3 =
+        "2022-01-23T14:11:51+0000 1642947111.749832/dq.builtin: SEDP ST3 745ad3d:7b:1:4802delete_proxy_writer (745ad3d:7b:1:4802) - deleting";
+
+        let matches = dds_log_regex.regex_set.matches(writer_sedp_st3);
+
+        assert!(matches.matched(6));
+
+        let capture = dds_log_regex.regex[6].captures(writer_sedp_st3).unwrap();
+
+        assert_eq!(&capture["system_id"], "745ad3d:7b:1");
+        assert_eq!(&capture["rw_id"], "4802");
+    }
+
+    #[test]
+    fn reader_sedp_st3() {
+        let dds_log_regex = DdsiLogRegex::new();
+        let reader_sedp_st3 =
+        "2022-01-23T14:11:51+0000 1642947111.745674/dq.builtin: SEDP ST3 745ad3d:7b:1:3007delete_proxy_reader (745ad3d:7b:1:3007) - deleting";
+
+        let matches = dds_log_regex.regex_set.matches(reader_sedp_st3);
+
+        assert!(matches.matched(7));
+
+        let capture = dds_log_regex.regex[7].captures(reader_sedp_st3).unwrap();
+
+        assert_eq!(&capture["system_id"], "745ad3d:7b:1");
+        assert_eq!(&capture["rw_id"], "3007");
+    }
+
     #[test]
     fn parse_match() {
         let dds_log_regex = DdsiLogRegex::new();
         let text_samples_match = [
+            "2022-01-23T14:08:13+0000 1642946893.209853/      main: ownip: 172.17.0.3",
             "2021-12-07T22:19:48+0000 1638915588.796443/      main: handleParticipantsSelf: found 428f812:7b:1 (self)",
             "2021-12-07T22:19:48+0000 1638915588.898675/      main: WRITER 428f812:7b:1:2302 QOS={topic=d_sampleChain,type=durabilityModule2::d_sampleChain_s,presentation=1:0:0,partition={durabilityPartition},durability=0,durability_service=0.000000000:{0:1}:{-1:-1:-1},deadline=2147483647.999999999,latency_budget=0.000000000,liveliness=0:0.000000000,reliability=1:1.000000000,destination_order=0,history=1:1,resource_limits=1:-1:-1,transport_priority=0,lifespan=2147483647.999999999,ownership=0,ownership_strength=0,writer_data_lifecycle={1,2147483647.999999999,2147483647.999999999},relaxed_qos_matching=0,synchronous_endpoint=0}",
             "2021-12-07T22:22:48+0000 1638915768.903511/dq.builtin: SEDP ST0 7efc2093:7b:1:302 reliable transient writer: __BUILT-IN PARTITION__.DCPSParticipant/kernelModule::v_participantInfo p(open) NEW (as 239.255.0.1:7401 139.229.170.24:37673) QOS={topic=DCPSParticipant,type=kernelModule::v_participantInfo,presentation=1:0:0,partition={__BUILT-IN PARTITION__},durability=2,durability_service=0.000000000:{0:1}:{-1:-1:-1},deadline=2147483647.999999999,latency_budget=0.000000000,liveliness=0:0.000000000,reliability=1:0.000000000,destination_order=0,history=1:-1,resource_limits=-1:-1:-1,transport_priority=0,lifespan=2147483647.999999999,ownership=0,ownership_strength=0,writer_data_lifecycle={1,2147483647.999999999,2147483647.999999999},relaxed_qos_matching=0,synchronous_endpoint=0}",
+            "2022-01-23T14:11:29+0000 1642947089.895283/dq.builtin: SEDP ST0 745ad3d:7b:1:3b07 reliable volatile reader: nile.Test.cmd.Test_command_start_cc827fa3/Test::command_start_cc827fa3 p(open) NEW (as 239.255.0.1:7401 172.17.0.4:39948) QOS={topic=Test_command_start_cc827fa3,type=Test::command_start_cc827fa3,presentation=0:0:0,partition={nile.Test.cmd},durability=0,deadline=2147483647.999999999,latency_budget=0.000000000,liveliness=0:2147483647.999999999,reliability=1:0.100000000,destination_order=0,history=0:100,resource_limits=-1:-1:-1,transport_priority=0,ownership=0,time_based_filter=0.000000000,reader_data_lifecycle=2147483647.999999999:2147483647.999999999:0:1:1,relaxed_qos_matching=0,reader_lifespan={0,2147483647.999999999},subscription_keys={0,{}},share={0,},synchronous_endpoint=0}",
+            "2022-01-23T14:11:29+0000 1642947089.987961/    (anon): READER 5bbed783:7b:1:3b07 QOS={topic=Test_logevent_summaryState_782ec3fd,type=Test::logevent_summaryState_782ec3fd,presentation=0:0:0,partition={nile.Test.data},durability=2,durability_service=0.000000000:{0:100}:{-1:-1:-1},deadline=2147483647.999999999,latency_budget=0.000000000,liveliness=0:2147483647.999999999,reliability=1:0.100000000,destination_order=0,history=0:100,resource_limits=-1:-1:-1,transport_priority=0,lifespan=2147483647.999999999,ownership=0,time_based_filter=0.000000000,reader_data_lifecycle=2147483647.999999999:2147483647.999999999:0:1:1,relaxed_qos_matching=0,reader_lifespan={0,2147483647.999999999},subscription_keys={0,{}},share={0,},synchronous_endpoint=0}",
+            "2022-01-23T14:11:51+0000 1642947111.749832/dq.builtin: SEDP ST3 745ad3d:7b:1:4802delete_proxy_writer (745ad3d:7b:1:4802) - deleting",
+            "2022-01-23T14:11:51+0000 1642947111.745674/dq.builtin: SEDP ST3 745ad3d:7b:1:3007delete_proxy_reader (745ad3d:7b:1:3007) - deleting",
             ];
         let timestamps = [
+            "1642946893.209853",
             "1638915588.796443",
             "1638915588.898675",
             "1638915768.903511",
+            "1642947089.895283",
+            "1642947089.987961",
+            "1642947111.749832",
+            "1642947111.745674",
         ];
 
         for (text, timestamp) in text_samples_match.iter().zip(timestamps.iter()) {
