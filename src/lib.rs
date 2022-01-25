@@ -1,7 +1,8 @@
 use regex::Captures;
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs;
+use std::fs::File;
+use std::io::{self, prelude::*, BufReader};
 
 mod ddsi_log_regex;
 mod ddsi_participant;
@@ -22,32 +23,25 @@ where
         &config.get_output(),
     );
 
-    let contents = fs::read_to_string(config.get_filename())?;
-
-    let summary = generate_summary(&contents);
+    let summary = generate_summary(&config.get_filename());
 
     println!("{}", summary);
 
     Ok(())
 }
 
-fn generate_summary(contents: &str) -> String {
+fn generate_summary(filename: &str) -> String {
     let ddsi_log_regex = ddsi_log_regex::DdsiLogRegex::new();
 
-    println!("Preprocessing {} lines.", contents.len());
-    let matches: Vec<&str> = contents
-        .lines()
-        .filter(|line| ddsi_log_regex.is_match(&line))
-        .collect();
+    let file = File::open(filename).unwrap();
+    let reader = BufReader::new(file);
 
-    let n_matches = matches.len();
     let mut ddsi_topology = ddsi_topology::DdsiTopology::new();
 
-    println!("Processing {} lines.", n_matches);
-
-    for line in matches {
-        let dds_log_type = ddsi_log_regex.parse(line).unwrap();
-        ddsi_topology.update(dds_log_type);
+    for line in reader.lines() {
+        if let Some(dds_log_type) = ddsi_log_regex.parse(&line.unwrap()) {
+            ddsi_topology.update(dds_log_type);
+        }
     }
 
     println!("Generating summary.");
@@ -57,6 +51,7 @@ fn generate_summary(contents: &str) -> String {
         "Summary:\n\
         \t- Found {} lines matching ddsi logs.\n\
         {}",
-        n_matches, summary,
+        ddsi_topology.len(),
+        summary,
     )
 }
