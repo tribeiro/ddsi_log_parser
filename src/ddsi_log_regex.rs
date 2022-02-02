@@ -202,7 +202,11 @@ impl DdsiLogRegex {
 
     /// Return the index of the regex expression that matches the input text.
     fn get_match_index(&self, text: &str) -> Option<usize> {
-        self.regex_set.matches(text).into_iter().next()
+        if text.contains("thread_cputime") {
+            None
+        } else {
+            self.regex_set.matches(text).into_iter().next()
+        }
     }
 }
 
