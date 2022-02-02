@@ -1,6 +1,6 @@
 [package]
 name = "ddsi_log_parser"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "Utility to parse ddsi2 logs."
 license = "MIT"
