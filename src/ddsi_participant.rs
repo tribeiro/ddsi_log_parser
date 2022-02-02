@@ -1,6 +1,7 @@
 use crate::ddsi_log_regex::DdsiLogType;
 use log::debug;
 use regex::Captures;
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 use std::collections::HashMap;
 use std::{error::Error, fmt};
 
@@ -201,5 +202,37 @@ impl DdsiParticipant {
                 .and_modify(|writer| writer.deleted.push(capture["timestamp"].parse().unwrap()));
         }
         Ok(())
+    }
+}
+
+impl Serialize for DdsiParticipant {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // 3 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("DdsiParticipant", 6)?;
+        state.serialize_field("system_id", &self.system_id);
+        state.serialize_field("hostname", &self.hostname);
+        state.serialize_field("readers", &self.readers);
+        state.serialize_field("writers", &self.writers);
+        state.serialize_field("is_master", &self.is_master);
+        state.serialize_field("master_id", &self.master_id);
+        state.end()
+    }
+}
+
+impl Serialize for Qos {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // 3 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("DdsiParticipant", 6)?;
+        state.serialize_field("topic", &self.topic);
+        state.serialize_field("partition", &self.partition);
+        state.serialize_field("created", &self.created);
+        state.serialize_field("deleted", &self.deleted);
+        state.end()
     }
 }

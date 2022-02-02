@@ -71,6 +71,13 @@ fn generate_summary(filename: &str) -> String {
     println!("Generating summary.");
     let summary = ddsi_topology.summarize();
 
+    println!("Saving ddsi_topology.");
+
+    let serialized = serde_json::to_string(&ddsi_topology).unwrap();
+
+    let mut file = File::create("ddsi_topology.json").unwrap();
+    file.write_all(serialized.as_bytes()).unwrap();
+
     format!(
         "Summary:\n\
         \t- Found {} lines matching ddsi logs.\n\

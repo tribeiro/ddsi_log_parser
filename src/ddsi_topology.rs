@@ -1,5 +1,6 @@
 use crate::ddsi_log_regex::DdsiLogType;
 use crate::ddsi_participant::DdsiParticipant;
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 use std::collections::HashMap;
 use std::error::Error;
 
@@ -79,5 +80,18 @@ impl DdsiTopology {
             }
         }
         summary
+    }
+}
+
+impl Serialize for DdsiTopology {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // 3 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("DdsiTopology", 2)?;
+        state.serialize_field("participants", &self.participants)?;
+        state.serialize_field("own_ip", &self.own_ip)?;
+        state.end()
     }
 }
